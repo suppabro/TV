@@ -1,27 +1,54 @@
 const PLAYLIST =
   "https://api.allorigins.win/raw?url=https://iptv-org.github.io/iptv/index.m3u";
 
-const player = document.getElementById("player");
+const video = document.getElementById("player");
 const channelsDiv = document.getElementById("channels");
 const searchInput = document.getElementById("search");
 const epgBox = document.getElementById("epg-content");
 
 let channels = [];
 let filtered = [];
+let hls = null;
 
-function play(url, name) {
-  epgBox.textContent = "Now Playing: " + name;
+// ---------- PLAY FUNCTION ----------
+function playChannel(url, name) {
+  epgBox.textContent = "Loading: " + name;
+
+  if (hls) {
+    hls.destroy();
+    hls = null;
+  }
 
   if (Hls.isSupported()) {
-    const hls = new Hls();
+    hls = new Hls({
+      enableWorker: true,
+      lowLatencyMode: true
+    });
+
     hls.loadSource(url);
-    hls.attachMedia(player);
-  } else if (player.canPlayType("application/vnd.apple.mpegurl")) {
-    player.src = url;
+    hls.attachMedia(video);
+
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(() => {
+        epgBox.textContent = "Tap ▶ to play";
+      });
+    });
+
+    hls.on(Hls.Events.ERROR, () => {
+      epgBox.textContent = "Stream not supported";
+    });
+
+  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    video.src = url;
+    video.play().catch(() => {
+      epgBox.textContent = "Tap ▶ to play";
+    });
+  } else {
+    epgBox.textContent = "HLS not supported";
   }
 }
 
-// Load & parse M3U
+// ---------- LOAD PLAYLIST ----------
 fetch(PLAYLIST)
   .then(res => res.text())
   .then(data => {
@@ -44,13 +71,16 @@ fetch(PLAYLIST)
 
     filtered = channels;
     render();
-    if (filtered[0]) play(filtered[0].url, filtered[0].name);
+    epgBox.textContent = "Select a channel";
+  })
+  .catch(() => {
+    epgBox.textContent = "Playlist failed to load";
   });
 
-// Render channels
+// ---------- RENDER ----------
 function render() {
   channelsDiv.innerHTML = "";
-  filtered.forEach(c => {
+  filtered.slice(0, 200).forEach(c => {
     const div = document.createElement("div");
     div.className = "channel";
     div.tabIndex = 0;
@@ -60,19 +90,19 @@ function render() {
       <div>${c.name}</div>
     `;
 
-    div.onclick = () => play(c.url, c.name);
+    div.onclick = () => playChannel(c.url, c.name);
     channelsDiv.appendChild(div);
   });
 }
 
-// Search
+// ---------- SEARCH ----------
 searchInput.oninput = () => {
   const q = searchInput.value.toLowerCase();
   filtered = channels.filter(c => c.name.toLowerCase().includes(q));
   render();
 };
 
-// Category filter
+// ---------- CATEGORY FILTER ----------
 document.querySelectorAll("#filters button").forEach(btn => {
   btn.onclick = () => {
     const cat = btn.dataset.cat;
@@ -84,7 +114,7 @@ document.querySelectorAll("#filters button").forEach(btn => {
   };
 });
 
-// Smart TV / Keyboard navigation
+// ---------- TV REMOTE ----------
 document.addEventListener("keydown", e => {
   const focused = document.activeElement;
   if (!focused.classList.contains("channel")) return;
