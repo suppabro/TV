@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>IPTV Live TV</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="glass">
+  <h1>📺 IPTV Live</h1>
+
+  <input id="search" placeholder="Search channels..." />
+
+  <div id="filters">
+    <button data-cat="ALL">All</button>
+    <button data-cat="NEWS">News</button>
+    <button data-cat="SPORTS">Sports</button>
+    <button data-cat="MOVIES">Movies</button>
+  </div>
+</header>
+
+<section class="player-section">
+  <video id="player" controls autoplay></video>
+
+  <div id="epg" class="glass">
+    <span id="epg-content">Select a channel</span>
+  </div>
+</section>
+
+<section id="channels" class="grid"></section>
+
+<script src="app.js"></script>
+</body>
+</html>
